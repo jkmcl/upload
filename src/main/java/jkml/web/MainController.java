@@ -1,5 +1,6 @@
 package jkml.web;
 
+import java.io.IOException;
 import java.time.Instant;
 
 import org.springframework.web.bind.annotation.GetMapping;
@@ -18,13 +19,14 @@ public class MainController {
 
 	@GetMapping(path = "/upload", produces = TEXT_TSV_VALUE)
 	public String upload(@RequestParam String fileType, @RequestParam String baseName,
-			@RequestParam(defaultValue = "true") boolean skipNames) {
-		TsvBuilder tb = TsvBuilder.system();
+			@RequestParam(defaultValue = "true") boolean skipNames) throws IOException {
+		StringBuilder sb = new StringBuilder();
+		TsvBuilder tb = TsvBuilder.system(sb);
 		if (!skipNames) {
-			tb.addFields("fileType", "baseName", "startTime", "stopTime");
+			tb.addRecord("fileType", "baseName", "startTime", "stopTime");
 		}
-		tb.addFields(fileType, baseName, "21:00", "23:59");
-		return tb.toString();
+		tb.addRecord(fileType, baseName, "21:00", "23:59");
+		return sb.toString();
 	}
 
 }

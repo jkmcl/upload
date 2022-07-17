@@ -1,6 +1,7 @@
 package jkml.web;
 
-import java.util.Collection;
+import java.io.IOException;
+import java.util.Objects;
 
 /**
  * Loosely based on the <a href=
@@ -15,41 +16,34 @@ public class TsvBuilder {
 
 	private static final char CR = '\r';
 
-	private final StringBuilder sb = new StringBuilder();
-
 	private final String lineSeparator;
+
+	private final Appendable appendable;
 
 	private boolean firstField = true;
 
-	private TsvBuilder(String lineSeparator) {
+	private TsvBuilder(String lineSeparator, Appendable appendable) {
+		Objects.requireNonNull(lineSeparator);
+		Objects.requireNonNull(appendable);
 		this.lineSeparator = lineSeparator;
+		this.appendable = appendable;
 	}
 
-	public static TsvBuilder system() {
-		return new TsvBuilder(System.lineSeparator());
+	public static TsvBuilder system(Appendable appendable) {
+		return new TsvBuilder(System.lineSeparator(), appendable);
 	}
 
-	public static TsvBuilder custom(String lineSeparator) {
-		return new TsvBuilder(lineSeparator);
+	public static TsvBuilder custom(String lineSeparator, Appendable appendable) {
+		return new TsvBuilder(lineSeparator, appendable);
 	}
 
-	public void clear() {
-		sb.setLength(0);
-		firstField = true;
-	}
-
-	@Override
-	public String toString() {
-		return sb.toString();
-	}
-
-	public TsvBuilder endFields() {
-		sb.append(lineSeparator);
+	public TsvBuilder endFields() throws IOException {
+		appendable.append(lineSeparator);
 		firstField = true;
 		return this;
 	}
 
-	public TsvBuilder addFields(String... fields) {
+	public TsvBuilder addRecord(Iterable<String> fields) throws IOException {
 		for (String f : fields) {
 			addField(f);
 		}
@@ -57,7 +51,7 @@ public class TsvBuilder {
 		return this;
 	}
 
-	public TsvBuilder addFields(Collection<String> fields) {
+	public TsvBuilder addRecord(String... fields) throws IOException {
 		for (String f : fields) {
 			addField(f);
 		}
@@ -65,33 +59,33 @@ public class TsvBuilder {
 		return this;
 	}
 
-	public TsvBuilder addField(String field) {
+	public TsvBuilder addField(String field) throws IOException {
 		if (firstField) {
 			firstField = false;
 		} else {
-			sb.append(TAB);
+			appendable.append(TAB);
 		}
 
 		if (field == null) {
-			sb.append("null");
+			appendable.append("null");
 		} else {
 			for (int i = 0, n = field.length(); i < n; ++i) {
-				append(field.charAt(i), sb);
+				append(field.charAt(i), appendable);
 			}
 		}
 
 		return this;
 	}
 
-	private static void append(char c, StringBuilder sb) {
+	private static void append(char c, Appendable appendable) throws IOException {
 		if (c == TAB) {
-			sb.append("\\t");
+			appendable.append("\\t");
 		} else if (c == LF) {
-			sb.append("\\n");
+			appendable.append("\\n");
 		} else if (c == CR) {
-			sb.append("\\r");
+			appendable.append("\\r");
 		} else {
-			sb.append(c);
+			appendable.append(c);
 		}
 	}
 
