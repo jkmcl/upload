@@ -1,6 +1,6 @@
 package jkml.web;
 
-import java.util.List;
+import java.util.Collection;
 
 /**
  * Loosely based on the <a href=
@@ -9,27 +9,90 @@ import java.util.List;
  */
 public class TsvBuilder {
 
-	private static final String TAB = "\t";
+	private static final char TAB = '\t';
 
-	private static final String EOL = "\n";
+	private static final char LF = '\n';
+
+	private static final char CR = '\r';
 
 	private final StringBuilder sb = new StringBuilder();
 
-	public TsvBuilder() {
+	private final String lineSeparator;
+
+	private boolean firstField = true;
+
+	private TsvBuilder(String lineSeparator) {
+		this.lineSeparator = lineSeparator;
 	}
 
-	public TsvBuilder(List<String> names) {
-		addRecord(names);
+	public static TsvBuilder system() {
+		return new TsvBuilder(System.lineSeparator());
 	}
 
-	public TsvBuilder addRecord(List<String> fields) {
-		sb.append(String.join(TAB, fields)).append(EOL);
-		return this;
+	public static TsvBuilder custom(String lineSeparator) {
+		return new TsvBuilder(lineSeparator);
+	}
+
+	public void clear() {
+		sb.setLength(0);
+		firstField = true;
 	}
 
 	@Override
 	public String toString() {
 		return sb.toString();
+	}
+
+	public TsvBuilder endFields() {
+		sb.append(lineSeparator);
+		firstField = true;
+		return this;
+	}
+
+	public TsvBuilder addFields(String... fields) {
+		for (String f : fields) {
+			addField(f);
+		}
+		endFields();
+		return this;
+	}
+
+	public TsvBuilder addFields(Collection<String> fields) {
+		for (String f : fields) {
+			addField(f);
+		}
+		endFields();
+		return this;
+	}
+
+	public TsvBuilder addField(String field) {
+		if (firstField) {
+			firstField = false;
+		} else {
+			sb.append(TAB);
+		}
+
+		if (field == null) {
+			sb.append("null");
+		} else {
+			for (int i = 0, n = field.length(); i < n; ++i) {
+				append(field.charAt(i), sb);
+			}
+		}
+
+		return this;
+	}
+
+	private static void append(char c, StringBuilder sb) {
+		if (c == TAB) {
+			sb.append("\\t");
+		} else if (c == LF) {
+			sb.append("\\n");
+		} else if (c == CR) {
+			sb.append("\\r");
+		} else {
+			sb.append(c);
+		}
 	}
 
 }
