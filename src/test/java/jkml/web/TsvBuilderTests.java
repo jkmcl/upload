@@ -27,8 +27,8 @@ class TsvBuilderTests {
 	@Test
 	void test2() throws Exception {
 		StringBuilder sb = new StringBuilder();
-		TsvBuilder.custom("\n", sb).addRecord(List.of("a\t\r\n"));
-		assertEquals("a\\t\\r\\n\n", sb.toString());
+		TsvBuilder.unix(sb).addRecord(List.of("\\a\t\r\n"));
+		assertEquals("\\\\a\\t\\r\\n\n", sb.toString());
 	}
 
 	@Test
@@ -60,7 +60,7 @@ class TsvBuilderTests {
 	@Test
 	void test4() throws Exception {
 		StringWriter sw = new StringWriter();
-		TsvBuilder.custom("\n", sw).addRecord("hello", "world", null);
+		TsvBuilder.unix(sw).addRecord("hello", "world", null);
 		assertEquals("hello\tworld\tnull\n", sw.toString());
 	}
 

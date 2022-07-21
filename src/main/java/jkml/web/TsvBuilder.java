@@ -10,44 +10,69 @@ import java.util.Objects;
  */
 public class TsvBuilder {
 
-	private static final char TAB = '\t';
+	private static final char HT = '\t';
 
 	private static final char LF = '\n';
 
 	private static final char CR = '\r';
 
+	private static final char BS = '\\'; // backslash, not backspace
+
 	private final String lineSeparator;
 
-	private final Appendable appendable;
+	private final Appendable output;
 
 	private boolean firstField = true;
 
-	private TsvBuilder(String lineSeparator, Appendable appendable) {
-		Objects.requireNonNull(lineSeparator);
-		Objects.requireNonNull(appendable);
-		this.lineSeparator = lineSeparator;
-		this.appendable = appendable;
+	private TsvBuilder(String lineSeparator, Appendable output) {
+		this.lineSeparator = Objects.requireNonNull(lineSeparator);
+		this.output = Objects.requireNonNull(output);
 	}
 
-	public static TsvBuilder system(Appendable appendable) {
-		return new TsvBuilder(System.lineSeparator(), appendable);
+	public static TsvBuilder system(Appendable output) {
+		return new TsvBuilder(System.lineSeparator(), output);
 	}
 
-	public static TsvBuilder custom(String lineSeparator, Appendable appendable) {
-		return new TsvBuilder(lineSeparator, appendable);
+	public static TsvBuilder windows(Appendable output) {
+		return new TsvBuilder("\r\n", output);
 	}
 
-	public TsvBuilder endFields() throws IOException {
-		appendable.append(lineSeparator);
-		firstField = true;
+	public static TsvBuilder unix(Appendable output) {
+		return new TsvBuilder("\n", output);
+	}
+
+	public TsvBuilder addField(String field) throws IOException {
+		if (firstField) {
+			firstField = false;
+		} else {
+			output.append(HT);
+		}
+
+		if (field == null) {
+			output.append("null");
+			return this;
+		}
+
+		for (int i = 0, n = field.length(); i < n; ++i) {
+			char c = field.charAt(i);
+			if (c == HT) {
+				output.append("\\t");
+			} else if (c == LF) {
+				output.append("\\n");
+			} else if (c == CR) {
+				output.append("\\r");
+			} else if (c == BS) {
+				output.append("\\\\");
+			} else {
+				output.append(c);
+			}
+		}
 		return this;
 	}
 
-	public TsvBuilder addRecord(Iterable<String> fields) throws IOException {
-		for (String f : fields) {
-			addField(f);
-		}
-		endFields();
+	public TsvBuilder endFields() throws IOException {
+		output.append(lineSeparator);
+		firstField = true;
 		return this;
 	}
 
@@ -59,34 +84,12 @@ public class TsvBuilder {
 		return this;
 	}
 
-	public TsvBuilder addField(String field) throws IOException {
-		if (firstField) {
-			firstField = false;
-		} else {
-			appendable.append(TAB);
+	public TsvBuilder addRecord(Iterable<String> fields) throws IOException {
+		for (String f : fields) {
+			addField(f);
 		}
-
-		if (field == null) {
-			appendable.append("null");
-		} else {
-			for (int i = 0, n = field.length(); i < n; ++i) {
-				append(field.charAt(i), appendable);
-			}
-		}
-
+		endFields();
 		return this;
-	}
-
-	private static void append(char c, Appendable appendable) throws IOException {
-		if (c == TAB) {
-			appendable.append("\\t");
-		} else if (c == LF) {
-			appendable.append("\\n");
-		} else if (c == CR) {
-			appendable.append("\\r");
-		} else {
-			appendable.append(c);
-		}
 	}
 
 }
